@@ -115,7 +115,7 @@ public class AudioSender extends Thread
 			System.exit(1);
 		}
 		
-		byte[]	abBuffer = new byte[INTERNAL_BUFFER_SIZE];
+		byte[] abBuffer = new byte[INTERNAL_BUFFER_SIZE];
 		int	nBufferSize = abBuffer.length;
 		m_bRecording = true;
 		
