@@ -1,23 +1,22 @@
 package it.polimi.dima.SkitalkAudioServer.model.commOut;
 
+import it.polimi.dima.SkitalkAudioServer.model.HandlersList;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Map;
 import java.util.Scanner;
 
 public class ClientHandlerOut implements Runnable {
 	private Socket socket;
+	private HandlersList list;
 	private int clientId;
-	private int groupId;
 	private Scanner socketIn;
 	private DataOutputStream socketOut;
-	private Map<InetAddress, ClientHandlerOut> map;
 	
-	public ClientHandlerOut(Socket socket, Map<InetAddress, ClientHandlerOut> map) {
+	public ClientHandlerOut(Socket socket, HandlersList list) {
 		this.socket = socket;
-		this.map = map;
+		this.list = list;
 	}
 
 	public void run() {
@@ -31,11 +30,10 @@ public class ClientHandlerOut implements Runnable {
 
 	private void initializeConnection(Socket socket) throws IOException {
 		socketIn = new Scanner(socket.getInputStream());
-		socketOut = new DataOutputStream(socket.getOutputStream());
 		clientId = Integer.parseInt(socketIn.nextLine());
-		groupId = Integer.parseInt(socketIn.nextLine());
 		socketIn.close();
-		map.put(socket.getInetAddress(), this);
+		list.addHandlerOut(this);
+		socketOut = new DataOutputStream(socket.getOutputStream());
 	}
 	
 	public void sendAudioData(byte[] buffer, int nBytes) {
@@ -49,9 +47,5 @@ public class ClientHandlerOut implements Runnable {
 
 	public int getClientId() {
 		return clientId;
-	}
-
-	public int getGroupId() {
-		return groupId;
 	}
 }

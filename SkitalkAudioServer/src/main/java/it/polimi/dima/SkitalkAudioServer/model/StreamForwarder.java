@@ -6,22 +6,27 @@ import it.polimi.dima.SkitalkAudioServer.model.commOut.ClientHandlerOut;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 public class StreamForwarder extends Thread {
 	private DataInputStream stream;
 	private HandlersList list;
 	private int groupId;
+	private Map<Integer, Integer> activeMap;
 	
-	public StreamForwarder(DataInputStream stream, HandlersList list, int groupId) {
+	public StreamForwarder(DataInputStream stream, HandlersList list, int groupId, Map<Integer, Integer> activeMap) {
 		this.stream = stream;
 		this.list = list;
 		this.groupId = groupId;
+		this.activeMap = activeMap;
 	}
 	
 	@Override
 	public void run() {
-		ArrayList<ClientHandlerOut> myList = new ArrayList<ClientHandlerOut>(list.getClientsOut());
-		ArrayList<ClientHandlerOut> myGroupMates = findMyGroupClients(myList);
+		ArrayList<ClientHandlerOut> myGroupMates = findMyGroupClients();
 		
 		if(!myGroupMates.isEmpty()) {
 			byte[] abBuffer = new byte[AudioConstants.INTERNAL_BUFFER_SIZE];
@@ -33,7 +38,8 @@ public class StreamForwarder extends Thread {
 					//create a forwarder for each client
 					for(ClientHandlerOut cho : myGroupMates) {
 						Forwarder f = new Forwarder(abBuffer, nBytesRead, cho);
-						f.start();
+						Thread t = new Thread(f);
+						t.start();
 					}
 				}
 				stream.close();
@@ -43,11 +49,19 @@ public class StreamForwarder extends Thread {
 		}
 	}
 
-	private ArrayList<ClientHandlerOut> findMyGroupClients(ArrayList<ClientHandlerOut> myList) {
+	private ArrayList<ClientHandlerOut> findMyGroupClients() {
 		ArrayList<ClientHandlerOut> result = new ArrayList<ClientHandlerOut>();
-		for(ClientHandlerOut cho : myList)
-			if(cho.getGroupId() == groupId)
-				result.add(cho);
+		Map<Integer, Integer> activeMap;
+		synchronized(this.activeMap) {
+			activeMap = new HashMap<Integer, Integer>(this.activeMap);
+		}
+		Set<Integer> userIds = activeMap.keySet();
+		Iterator<Integer> it = userIds.iterator();
+		for(int userId; it.hasNext(); ) {
+			userId = it.next();
+			if(activeMap.get(userId) == groupId)
+				result.add(list.getHandlerOutById(userId));
+		}
 		return result;
 	}
 	

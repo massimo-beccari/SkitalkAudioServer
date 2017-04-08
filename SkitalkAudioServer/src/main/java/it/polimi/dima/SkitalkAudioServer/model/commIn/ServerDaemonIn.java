@@ -1,7 +1,6 @@
 package it.polimi.dima.SkitalkAudioServer.model.commIn;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -11,14 +10,14 @@ import java.util.concurrent.Executors;
 
 import it.polimi.dima.SkitalkAudioServer.Constants;
 import it.polimi.dima.SkitalkAudioServer.model.HandlersList;
-import it.polimi.dima.SkitalkAudioServer.model.commOut.ClientHandlerOut;
 
 public class ServerDaemonIn implements Runnable {
 	private ServerSocket serverSocket;
 	private HandlersList list;
-	private Map<InetAddress, ClientHandlerOut> map;
+	private Map<Integer, Integer> activeMap;
+	private Map<Integer, Integer> groupCommunciationsMap;
 	
-	public ServerDaemonIn(HandlersList list, Map<InetAddress, ClientHandlerOut> map) {
+	public ServerDaemonIn(HandlersList list, Map<Integer, Integer> activeMap, Map<Integer, Integer> groupCommunciationsMap) {
 		try {
 			serverSocket = new ServerSocket(Constants.SERVER_PORT_IN);
 		} catch (IOException e) {
@@ -26,7 +25,8 @@ public class ServerDaemonIn implements Runnable {
 			e.printStackTrace();
 		}
 		this.list = list;
-		this.map = map;
+		this.activeMap = activeMap;
+		this.groupCommunciationsMap = groupCommunciationsMap;
 	}
 
 	public void run() {
@@ -41,9 +41,7 @@ public class ServerDaemonIn implements Runnable {
 				
 			}
 			if(socket != null) {
-				//TODO check another client of same group active
-				ClientHandlerIn chi = new ClientHandlerIn(socket, map, list);
-				list.getClientsIn().add(chi);
+				ClientHandlerIn chi = new ClientHandlerIn(socket, list, activeMap, groupCommunciationsMap);
 				executor.submit(chi);
 			}
 		}
