@@ -17,8 +17,10 @@ public class ActiveMapUpdater implements Runnable {
 	}
 
 	public void run() {
+		System.out.println("AMU: ActiveMapUpdater launched.");
 		while(true) {
 			updateMap();
+			System.out.println("AMU: map updated.");
 			try {
 				Thread.sleep(Constants.ACTIVE_GROUPS_MAP_UPDATE_INTERVAL*1000);
 			} catch (InterruptedException e) {
@@ -52,7 +54,7 @@ public class ActiveMapUpdater implements Runnable {
 				JsonObject response = requests[i].getResponse();
 				activeMap.put(userIds[i], response.get("activeGroup").getAsInt());
 			} catch (InterruptedException e) {
-				System.err.println("ActiveMapUpdater thread interrupted. Failed to join it.");
+				System.err.println("AMU: ActiveMapUpdater thread interrupted. Failed to join it.");
 				e.printStackTrace();
 			}
 		}

@@ -30,8 +30,9 @@ public class ClientHandlerIn implements Runnable {
 	public void run() {
 		try {
 			initializeConnection(socket);
+			System.out.println("CHI"+userId+": connection established.");
 		} catch (IOException e) {
-			System.err.println("Error opening socket streams.");
+			System.err.println("CHI"+userId+": Error opening socket streams.");
 			e.printStackTrace();
 		}
 	}
@@ -42,27 +43,23 @@ public class ClientHandlerIn implements Runnable {
 		groupId = Integer.parseInt(userInfoIn.nextLine());
 		userInfoIn.close();
 		if(groupCommunciationsMap.get(groupId).equals(null) || groupCommunciationsMap.get(groupId) == Constants.NO_USER_ACTIVE_ON_GROUP) {
+			System.out.println("CHI"+userId+": begin audio communication.");
 			synchronized(groupCommunciationsMap) {
 				groupCommunciationsMap.put(groupId, userId);
 			}
-			list.getClientsIn().add(this);
+			list.addHandlerIn(this);
 			socketIn = new DataInputStream(socket.getInputStream());
 			forwardAudioData();
-		}
+		} else
+			System.out.println("CHI"+userId+": failed to begin audio communication. Another user is already talking.");
 	}
 	
 	private void forwardAudioData() {
 		StreamForwarder sender = new StreamForwarder(socketIn, list, groupId, activeMap);
-		Thread t = new Thread(sender);
-		t.start();
-		try {
-			t.join();
-		} catch (InterruptedException e) {
-			System.err.println("Failed to join StreamForwarder. The thread has been interrupted.");
-			e.printStackTrace();
-		}
+		sender.forwardStream();
 		synchronized(groupCommunciationsMap) {
 			groupCommunciationsMap.put(groupId, Constants.NO_USER_ACTIVE_ON_GROUP);
 		}
+		list.removeHandlerIn(this);
 	}
 }

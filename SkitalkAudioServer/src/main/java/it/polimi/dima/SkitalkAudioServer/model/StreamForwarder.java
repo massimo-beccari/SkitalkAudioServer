@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class StreamForwarder extends Thread {
+public class StreamForwarder {
 	private DataInputStream stream;
 	private HandlersList list;
 	private int groupId;
@@ -24,12 +24,15 @@ public class StreamForwarder extends Thread {
 		this.activeMap = activeMap;
 	}
 	
-	@Override
-	public void run() {
+	public void forwardStream() {
 		ArrayList<ClientHandlerOut> myGroupMates = findMyGroupClients();
 		
 		if(!myGroupMates.isEmpty()) {
+			//instantiate and set buffer for handlers out
 			byte[] abBuffer = new byte[AudioConstants.INTERNAL_BUFFER_SIZE];
+			for(ClientHandlerOut cho : myGroupMates)
+				cho.setBuffer(abBuffer);
+			
 			int	nBufferSize = abBuffer.length;
 			try {
 				int	nBytesRead = 0;
@@ -37,9 +40,8 @@ public class StreamForwarder extends Thread {
 					nBytesRead = stream.read(abBuffer, 0, nBufferSize);
 					//create a forwarder for each client
 					for(ClientHandlerOut cho : myGroupMates) {
-						Forwarder f = new Forwarder(abBuffer, nBytesRead, cho);
-						Thread t = new Thread(f);
-						t.start();
+						cho.setnBytes(nBytesRead);
+						cho.notify();
 					}
 				}
 				stream.close();
@@ -47,6 +49,15 @@ public class StreamForwarder extends Thread {
 				e.printStackTrace();
 			}
 		}
+		
+		/*if(!myGroupMates.isEmpty()) {
+			PipedInputStream last = new PipedInputStream();
+			TeeInputStream[] newStreams = new TeeInputStream[myGroupMates.size() - 1];
+			InputStream current = stream;
+			for(int i = 0; i < myGroupMates.size() - 1; i++) {
+				
+			}
+		}*/
 	}
 
 	private ArrayList<ClientHandlerOut> findMyGroupClients() {
@@ -63,22 +74,5 @@ public class StreamForwarder extends Thread {
 				result.add(list.getHandlerOutById(userId));
 		}
 		return result;
-	}
-	
-	private class Forwarder extends Thread {
-		private byte[] buffer;
-		private int nBytes;
-		private ClientHandlerOut myHandler;
-		
-		public Forwarder(byte[] buffer, int nBytes, ClientHandlerOut myHandler) {
-			this.buffer = buffer;
-			this.nBytes = nBytes;
-			this.myHandler = myHandler;
-		}
-		
-		@Override
-		public void run() {
-			myHandler.sendAudioData(buffer, nBytes);
-		}
 	}
 }

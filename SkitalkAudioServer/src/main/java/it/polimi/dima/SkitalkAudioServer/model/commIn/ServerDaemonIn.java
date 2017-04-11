@@ -19,9 +19,10 @@ public class ServerDaemonIn implements Runnable {
 	
 	public ServerDaemonIn(HandlersList list, Map<Integer, Integer> activeMap, Map<Integer, Integer> groupCommunciationsMap) {
 		try {
+			System.out.println("SDI: server daemon in launched. Opening server socket in...");
 			serverSocket = new ServerSocket(Constants.SERVER_PORT_IN);
 		} catch (IOException e) {
-			System.err.println("Error opening server socket.");
+			System.err.println("SDI: Error opening server socket.");
 			e.printStackTrace();
 		}
 		this.list = list;
@@ -30,6 +31,7 @@ public class ServerDaemonIn implements Runnable {
 	}
 
 	public void run() {
+		int n = 0;
 		ExecutorService executor = Executors.newCachedThreadPool();
 		while(true) {
 			Socket socket = null;
@@ -41,6 +43,8 @@ public class ServerDaemonIn implements Runnable {
 				
 			}
 			if(socket != null) {
+				n++;
+				System.out.println("SDI: Client connection received at daemon in. nIN = "+n);
 				ClientHandlerIn chi = new ClientHandlerIn(socket, list, activeMap, groupCommunciationsMap);
 				executor.submit(chi);
 			}

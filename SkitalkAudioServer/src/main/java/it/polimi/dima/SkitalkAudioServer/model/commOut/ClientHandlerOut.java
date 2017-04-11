@@ -13,7 +13,9 @@ public class ClientHandlerOut implements Runnable {
 	private int clientId;
 	private Scanner socketIn;
 	private DataOutputStream socketOut;
-	
+	private byte[] buffer;
+	private int nBytes;
+
 	public ClientHandlerOut(Socket socket, HandlersList list) {
 		this.socket = socket;
 		this.list = list;
@@ -22,10 +24,24 @@ public class ClientHandlerOut implements Runnable {
 	public void run() {
 		try {
 			initializeConnection(socket);
+			System.out.println("CHO"+clientId+": connection established.");
 		} catch (IOException e) {
-			System.err.println("Error opening socket streams.");
+			System.err.println("CHO"+clientId+": Error opening socket output streams.");
 			e.printStackTrace();
 		}
+		while(socket.isConnected())
+			synchronized(this) {
+				try {
+					this.wait();
+					System.out.println("CHO"+clientId+": sending audio data...");
+					sendAudioData();
+				} catch (InterruptedException e) {
+					System.err.println("CHO"+clientId+": Failed for handler out to wait. Thread interrupted.");
+					e.printStackTrace();
+				}
+			}
+		list.removeHandlerOut(this);
+		System.out.println("CHO"+clientId+": end of connection. Handler removed.");
 	}
 
 	private void initializeConnection(Socket socket) throws IOException {
@@ -36,7 +52,7 @@ public class ClientHandlerOut implements Runnable {
 		socketOut = new DataOutputStream(socket.getOutputStream());
 	}
 	
-	public void sendAudioData(byte[] buffer, int nBytes) {
+	private void sendAudioData() {
 		try {
 			socketOut.write(buffer, 0, nBytes);
 			socketOut.flush();
@@ -44,8 +60,20 @@ public class ClientHandlerOut implements Runnable {
 			e.printStackTrace();
 		}
 	}
+	
+	public boolean isConnected() {
+		return !socket.isClosed();
+	}
 
 	public int getClientId() {
 		return clientId;
+	}
+	
+	public void setBuffer(byte[] buffer) {
+		this.buffer = buffer;
+	}
+
+	public void setnBytes(int nBytes) {
+		this.nBytes = nBytes;
 	}
 }

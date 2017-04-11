@@ -20,13 +20,21 @@ public class HandlersList {
 		mapOut = new HashMap<Integer, ClientHandlerOut>();
 	}
 	
-	public ArrayList<ClientHandlerIn> getClientsIn() {
-		return listIn;
+	public synchronized void addHandlerIn(ClientHandlerIn handler) {
+		listIn.add(handler);
+	}
+	
+	public synchronized void removeHandlerIn(ClientHandlerIn handler) {
+		listIn.remove(handler);
 	}
 	
 	public synchronized void addHandlerOut(ClientHandlerOut handler) {
 		listOut.add(handler);
 		mapOut.put(handler.getClientId(), handler);
+	}
+	
+	public synchronized void removeHandlerOut(ClientHandlerOut handler) {
+		listOut.remove(handler);
 	}
 	
 	public synchronized ClientHandlerOut getHandlerOutById(int userId) {
