@@ -29,7 +29,7 @@ public class HttpRequest implements Runnable {
         try {
             url = new URL(targetURL+"?"+urlParameters);
 
-            System.out.println("Request to: "+targetURL+"?"+urlParameters);
+            //System.out.println("Request to: "+targetURL+"?"+urlParameters);
 
             urlConnection = (HttpURLConnection) url
                     .openConnection();

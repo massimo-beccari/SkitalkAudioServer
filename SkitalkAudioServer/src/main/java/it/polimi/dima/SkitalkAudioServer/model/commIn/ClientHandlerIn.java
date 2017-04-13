@@ -30,36 +30,46 @@ public class ClientHandlerIn implements Runnable {
 	public void run() {
 		try {
 			initializeConnection(socket);
-			System.out.println("CHI"+userId+": connection established.");
 		} catch (IOException e) {
-			System.err.println("CHI"+userId+": Error opening socket streams.");
+			System.err.println("CHI-"+userId+": Error opening socket streams.");
 			e.printStackTrace();
 		}
 	}
 
 	private void initializeConnection(Socket socket) throws IOException {
+		/*socketIn = new DataInputStream(socket.getInputStream());
+		String userAndGroupIds = socketIn.readLine();
+		userId = socketIn.readInt();
+		groupId = socketIn.readInt();*/
 		userInfoIn = new Scanner(socket.getInputStream());
-		userId = Integer.parseInt(userInfoIn.nextLine());
-		groupId = Integer.parseInt(userInfoIn.nextLine());
-		userInfoIn.close();
-		if(groupCommunciationsMap.get(groupId).equals(null) || groupCommunciationsMap.get(groupId) == Constants.NO_USER_ACTIVE_ON_GROUP) {
-			System.out.println("CHI"+userId+": begin audio communication.");
+		String userAndGroupIds = userInfoIn.nextLine();
+		//userInfoIn.close();
+		Scanner sc = new Scanner(userAndGroupIds);
+		userId = Integer.parseInt(sc.next());
+		groupId = Integer.parseInt(sc.next());
+		sc.close();
+		System.out.println("CHI-"+userId+": connection established.");
+		if(groupCommunciationsMap.get(groupId) == null || groupCommunciationsMap.get(groupId) == Constants.NO_USER_ACTIVE_ON_GROUP) {
+			System.out.println("CHI-"+userId+": begin audio communication.");
 			synchronized(groupCommunciationsMap) {
 				groupCommunciationsMap.put(groupId, userId);
 			}
 			list.addHandlerIn(this);
 			socketIn = new DataInputStream(socket.getInputStream());
 			forwardAudioData();
-		} else
-			System.out.println("CHI"+userId+": failed to begin audio communication. Another user is already talking.");
+		} else {
+			System.out.println("CHI-"+userId+": failed to begin audio communication. Another user is already talking.");
+			list.removeHandlerIn(this);
+		}
 	}
 	
 	private void forwardAudioData() {
-		StreamForwarder sender = new StreamForwarder(socketIn, list, groupId, activeMap);
+		StreamForwarder sender = new StreamForwarder(socketIn, list, userId, groupId, activeMap);
 		sender.forwardStream();
 		synchronized(groupCommunciationsMap) {
 			groupCommunciationsMap.put(groupId, Constants.NO_USER_ACTIVE_ON_GROUP);
 		}
 		list.removeHandlerIn(this);
+		System.out.println("CHI-"+userId+": end audio communication.");
 	}
 }

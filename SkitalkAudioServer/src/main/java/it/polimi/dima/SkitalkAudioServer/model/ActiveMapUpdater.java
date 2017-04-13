@@ -2,6 +2,7 @@ package it.polimi.dima.SkitalkAudioServer.model;
 
 import it.polimi.dima.SkitalkAudioServer.Constants;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,7 +21,7 @@ public class ActiveMapUpdater implements Runnable {
 		System.out.println("AMU: ActiveMapUpdater launched.");
 		while(true) {
 			updateMap();
-			System.out.println("AMU: map updated.");
+			System.out.println("AMU: map updated. activeMap = "+activeMap.keySet());
 			try {
 				Thread.sleep(Constants.ACTIVE_GROUPS_MAP_UPDATE_INTERVAL*1000);
 			} catch (InterruptedException e) {
@@ -47,16 +48,23 @@ public class ActiveMapUpdater implements Runnable {
 			threads[i] = new Thread(requests[i]);
 			threads[i].start();
 		}
+		//create new map
+		Map<Integer, Integer> newMap = new HashMap<Integer, Integer>();
 		//wait for responses and update map
 		for(i = 0; i < usersNumber; i++) {
 			try {
 				threads[i].join();
 				JsonObject response = requests[i].getResponse();
-				activeMap.put(userIds[i], response.get("activeGroup").getAsInt());
+				newMap.put(userIds[i], response.get("activeGroup").getAsInt());
 			} catch (InterruptedException e) {
 				System.err.println("AMU: ActiveMapUpdater thread interrupted. Failed to join it.");
 				e.printStackTrace();
 			}
+		}
+		//update map
+		synchronized(activeMap) {
+			activeMap.clear();
+			activeMap.putAll(newMap);
 		}
 	}
 }

@@ -51,8 +51,7 @@ public class Main {
 				for(int id; it.hasNext(); ) {
 					id = it.next();
 					ClientHandlerOut cho = list.getHandlerOutById(id);
-					if(!cho.isConnected())
-						cho.notify();
+					cho.updateState();
 				}
 				System.out.println("HOGB: handlers terminated collected.");
 				try {
