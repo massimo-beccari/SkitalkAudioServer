@@ -6,6 +6,7 @@ import it.polimi.dima.SkitalkAudioServer.model.HandlersList;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Scanner;
@@ -49,6 +50,7 @@ public class ClientHandlerIn implements Runnable {
 		groupId = Integer.parseInt(sc.next());
 		sc.close();
 		System.out.println("CHI-"+userId+": connection established.");
+		PrintWriter socketOut = new PrintWriter(socket.getOutputStream());
 		if(groupCommunciationsMap.get(groupId) == null || groupCommunciationsMap.get(groupId) == Constants.NO_USER_ACTIVE_ON_GROUP) {
 			System.out.println("CHI-"+userId+": begin audio communication.");
 			synchronized(groupCommunciationsMap) {
@@ -59,12 +61,16 @@ public class ClientHandlerIn implements Runnable {
 			forwardAudioData();
 		} else {
 			System.out.println("CHI-"+userId+": failed to begin audio communication. Another user is already talking.");
+			socketOut.println(Constants.CHANNEL_BUSY);
+			socketOut.flush();
 			list.removeHandlerIn(this);
 		}
+		userInfoIn.close();
+		socketOut.close();
 	}
 	
 	private void forwardAudioData() {
-		StreamForwarder sender = new StreamForwarder(socketIn, list, userId, groupId, activeMap);
+		StreamForwarder sender = new StreamForwarder(socket, socketIn, list, userId, groupId, activeMap);
 		sender.forwardStream();
 		synchronized(groupCommunciationsMap) {
 			groupCommunciationsMap.put(groupId, Constants.NO_USER_ACTIVE_ON_GROUP);
